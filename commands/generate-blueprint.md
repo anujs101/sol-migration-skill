@@ -20,13 +20,23 @@ whether to migrate, route to /assess-migration instead.
 
 ## Behavior
 
-1. If no stack info provided: ask once — "What's your current stack?"
-   Wait for answer. Do not ask more than one question.
-2. Load skill/03-architecture-delta.md — produce delta report
-3. Load skill/04-decision-cards.md — produce decision cards for each key decision
-4. If user mentions Ethereum, EVM, Solidity, Hardhat, or any ERC standard:
+1. If running with filesystem access and a project exists in the current
+   directory: silently scan dependency manifests, schema/migration files,
+   and README for stack signals (same denylist as 01-discovery.md's
+   Codebase Scan — never read `.env`, secrets, credentials, or DB contents;
+   never execute anything). Do not announce this scan separately.
+2. If no stack info provided:
+   - If the scan above found something: ask once, as confirmation —
+     "I can see this is a [stack inferred from scan] — is that accurate,
+     and is there anything missing, especially auth/payments?"
+   - If the scan found nothing or filesystem access isn't available:
+     ask once — "What's your current stack?"
+   Wait for answer either way. Do not ask more than one question.
+3. Load skill/03-architecture-delta.md — produce delta report
+4. Load skill/04-decision-cards.md — produce decision cards for each key decision
+5. If user mentions Ethereum, EVM, Solidity, Hardhat, or any ERC standard:
    also load skill/05-eth-to-sol.md — append ETH overlay to delta
-5. Compile output as migration.md artifact
+6. Compile output as migration.md artifact
 
 ## Output Format
 

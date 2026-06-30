@@ -7,6 +7,12 @@
 > Goal: collect enough information across 6 questions to score all 8
 > suitability factors accurately. Do not skip to scoring until Q0–Q5
 > are answered.
+>
+> If running in an environment with filesystem access (e.g. Claude Code
+> inside a project directory), this module includes an optional silent
+> codebase scan between Q0 and Q1 — see "Codebase Scan" below. This is
+> an enhancement, not a dependency: the module works identically without
+> it, falling back to fully conversational discovery.
 
 ---
 
@@ -58,10 +64,81 @@ to guide tailoring of Q1–Q4:
 
 ---
 
+## Codebase Scan (Optional — Run Silently Between Q0 and Q1)
+
+If this skill is running inside Claude Code with filesystem access, and a
+real project exists in the current working directory (or one level below),
+attempt a lightweight static scan before asking Q1. This makes Q1 a
+confirmation instead of a cold question. If no project is detected, or the
+scan finds nothing useful, skip this step entirely and fall through to the
+original Q1 framing below — do not mention the attempt either way.
+
+**This step is silent.** Do not announce "let me check your files first"
+as a separate beat. Fold the result directly into how Q1 is phrased.
+
+### What to look for
+
+- Dependency manifests: `package.json`, `requirements.txt`, `go.mod`,
+  `Cargo.toml`, `composer.json`, `Gemfile`
+- README content, if present
+- Schema/migration files: Prisma schema, SQL migration files, `models/`
+  directory structure
+- Config file *names* only — e.g. note that `.env.example` exists and
+  list its key names, never its values
+- Existing Solana/web3 dependencies, if any (changes framing — see below)
+
+### Hard boundary — denylist, not judgment call
+
+**Never read or open:**
+- `.env`, `.env.local`, or any non-example env file
+- `*.pem`, `*.key`, `*secret*`, `*credential*`, any filename pattern
+  suggesting credentials
+- Database contents (rows/records) — schema structure only, never data
+- `.git` history, diffs, or commit logs unless the user explicitly asks
+  for that context
+
+**Never execute:**
+- Do not run the application, start a server, or execute any script
+  during this step. Static file inspection only.
+
+If a denylisted file would need to be read to answer something, do not
+read it — ask the user directly instead.
+
+### Using the scan result
+
+Build a short draft stack summary from what you found. Treat it as a
+hypothesis, not a fact — code can be stale, half-migrated, or contain
+abandoned integrations. Open Q1 with the draft and an explicit invitation
+to correct it (see the revised Q1 framing below).
+
+If the scan surfaces something that contradicts the Q0 answer — e.g. the
+user described a marketplace but the schema shows no listing/transaction
+tables — do not state this as a correction. Raise it as an open question
+instead: "I don't see [X] in the schema yet — is that still being built,
+or did I miss it?" Never imply the user described their own product
+incorrectly.
+
+---
+
 ### Q1 — Current Stack
 
 **Purpose:** Understand migration complexity and effort. Feeds Factor 7
 (team capacity) and sets up the architecture delta later.
+
+**If the codebase scan above found something useful, lead with it as
+confirmation instead of asking cold:**
+
+> "Before I ask — I can see this is a [stack inferred from manifest/schema],
+> with [notable schema tables/structures if found]. Is that the full
+> picture, or is there more I wouldn't catch from dependencies alone —
+> especially around auth and payments, since those are sometimes handled
+> by services with no SDK installed?"
+
+Always include the auth/payments caveat when leading with a scan result —
+those are the categories most likely to be invisible to a static scan
+(webhook-only integrations, server-side-only SDKs, etc.).
+
+**If no scan result is available, use the original cold framing:**
 
 **Generic framing:**
 > "What does your current tech stack look like? For example — what are
@@ -94,6 +171,18 @@ directly feed the Architecture Delta in Phase 2.
 **Purpose:** Determine whether digital assets exist or could exist in
 this product. Feeds Factors 1 (ownership) and 3 (secondary market).
 
+**If the codebase scan found ownership-shaped schema** (e.g. tables with
+fields like `owner_id`, `transfer`, `listing`, `inventory_item`), open
+with that observation, then still ask the real question — schema shape
+shows what's technically possible, not what users actually want:
+
+> "I notice your schema has [observation, e.g. a `listings` table with
+> a `seller_id` field] — that suggests some ownership/transfer model
+> already exists. [Then continue into the question below.]"
+
+This is context, not a substitute for the question. Business intent
+can't be read from a schema.
+
 **Generic framing:**
 > "What do users get or earn in your product — is there anything they
 > own, collect, or could potentially sell or transfer to others?"
@@ -115,11 +204,15 @@ this product. Feeds Factors 1 (ownership) and 3 (secondary market).
 - Secondary market potential: "can they sell/trade it?" is the key question
 - Whether ownership is already a pain point for users
 
-**Factor mapping:**
-- Clear owned assets → Factor 1: 8–12
-- No assets → Factor 1: 0–2
-- Natural secondary market → Factor 3: 8–12
-- No secondary market makes sense → Factor 3: 0–2
+**Factor mapping (use exact buckets from 02-suitability.md — 12/8/4/0 only):**
+- Core product IS ownership → Factor 1: 12
+- Ownership is a significant feature, not core → Factor 1: 8
+- Ownership is minor/planned → Factor 1: 4
+- No assets → Factor 1: 0
+- Secondary market is core to the product → Factor 3: 12
+- Secondary market is a natural extension → Factor 3: 8
+- Secondary market possible but not a priority → Factor 3: 4
+- No secondary market makes sense → Factor 3: 0
 
 ---
 
@@ -150,12 +243,15 @@ product need. Feeds Factors 2 (trustlessness) and 6 (decentralization).
 - "Users just trust us" with no friction → weak signal
 - Regulatory requirement for central control → negative signal
 
-**Factor mapping:**
-- Core flow requires trustless settlement → Factor 2: 10–12
-- Some flows benefit → Factor 2: 5–8
-- Trust is fine / contractual → Factor 2: 0–3
-- Decentralization demanded by users → Factor 6: 8–12
-- Centralized control acceptable → Factor 6: 1–4
+**Factor mapping (exact buckets from 02-suitability.md):**
+- Core flow requires trustless settlement → Factor 2: 12
+- Some flows benefit, most don't → Factor 2: 7
+- Trust is fine / contractual → Factor 2: 0–3 (use 3 if explicitly acceptable, 0 if purely internal B2B)
+- Decentralization is a core requirement → Factor 6: 12
+- Decentralization is a strong differentiator → Factor 6: 8
+- Decentralization appealing but not required → Factor 6: 4
+- Centralized control fine, no demand → Factor 6: 1
+- Centralization legally required → Factor 6: 0
 
 ---
 
@@ -163,6 +259,14 @@ product need. Feeds Factors 2 (trustlessness) and 6 (decentralization).
 
 **Purpose:** Understand transaction volume, frequency, and state change
 patterns. Feeds Factors 4 (volume) and 5 (state change frequency).
+
+**If the codebase scan found cron jobs, queue configs, or relevant DB
+indices**, mention them as color before asking, but still ask — code
+structure hints at cadence, it doesn't give you real numbers:
+
+> "I see [observation, e.g. a background job that processes orders
+> hourly] — does that match your actual transaction pattern, or is
+> real volume bursty/different from what the code suggests?"
 
 **Generic framing:**
 > "How often do transactions or meaningful state changes happen in your
@@ -186,12 +290,16 @@ patterns. Feeds Factors 4 (volume) and 5 (state change frequency).
 - State changes at events/milestones → on-chain is right (Factor 5: 10–12)
 - "During peak events" → interesting for burst capacity argument
 
-**Factor mapping:**
-- 1000+ daily transactions, cost-sensitive → Factor 4: 10–12
-- Hundreds of daily transactions → Factor 4: 6–8
-- Dozens or fewer → Factor 4: 0–4
-- State changes per-second → Factor 5: 0–2 (inverse)
-- State changes per-event → Factor 5: 8–12
+**Factor mapping (exact buckets from 02-suitability.md):**
+- High volume, high frequency (1000+ daily, microtransactions, real-time) → Factor 4: 12
+- Medium volume (hundreds daily, periodic settlements) → Factor 4: 8
+- Low volume but cost-sensitive (cross-border, B2B settlements) → Factor 4: 6
+- Low volume, not cost-sensitive → Factor 4: 2
+- Rarely transacts (monthly or less) → Factor 4: 0
+- State changes rarely (ownership/settlement/milestone events) → Factor 5: 12 (inverse factor)
+- State changes periodically (daily/batch) → Factor 5: 8
+- State changes frequently (hourly/per session) → Factor 5: 4
+- State changes constantly (every action, real-time) → Factor 5: 0
 
 ---
 
@@ -263,6 +371,10 @@ full intake if any of these apply:
 - User says "I just think blockchain is cool" with no product fit signal
 - User has no product yet ("I have an idea") — advise them to validate
   the idea first, then return for migration assessment
+- Core product is real-time/live state at sub-minute granularity
+  (live chat, real-time analytics dashboards, live collaborative editing) —
+  this matches 02-suitability.md's hard rule that >1 state change/minute/user
+  is an automatic Don't Migrate; no need to run full intake to confirm it
 
 **Immediate Migrate signals (still run full intake, but signal is strong):**
 - "We run a secondary market for [anything]"
@@ -302,19 +414,23 @@ Q0: "What does your product do and why Solana?"
 Read domain archetype from answer
         │
         ▼
-Q1: Current stack (tailored framing)
+[Silent] Codebase scan if project files present in cwd
+   (manifest, schema, README — denylist applies, never announced)
         │
         ▼
-Q2: Asset question (tailored framing)
+Q1: Current stack (confirmation if scan succeeded, else cold framing)
         │
         ▼
-Q3: Trust question (tailored framing)
+Q2: Asset question (tailored framing, scan evidence if available)
         │
         ▼
-Q4: Scale question (tailored framing)
+Q3: Trust question (tailored framing — no scan signal applies here)
         │
         ▼
-Q5: Team + timeline + wallet readiness (generic)
+Q4: Scale question (tailored framing, scan evidence if available)
+        │
+        ▼
+Q5: Team + timeline + wallet readiness (generic — no scan signal applies here)
         │
         ▼
 Inference pass — fill gaps without asking more

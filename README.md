@@ -54,6 +54,27 @@ Blockchain would add: wallet friction, higher complexity, regulatory surface.
 Stripe is the correct payment layer for your use case.
 ```
 
+**Codebase-aware discovery.** This skill runs inside Claude Code, where the
+typical session has an actual project open — not a blank chat. When that's
+the case, discovery silently checks your project's dependency manifest,
+schema, and README before asking about your stack, then opens that
+question as a confirmation instead of a cold ask:
+
+> "I can see this is a Next.js app using Supabase and Stripe, with a
+> Postgres schema that has `users`, `orders`, and `tickets` tables — is
+> that the full picture, or is there more I wouldn't catch from
+> dependencies alone, especially around auth and payments?"
+
+This doesn't reduce the number of questions asked — discovery is still
+six questions, always. What it changes is speed and accuracy on the
+question code can actually answer. Business-context questions (whether
+trust is a pain point, team capacity, wallet readiness) stay fully
+conversational, because no codebase can answer those. The scan never
+reads `.env` files, secrets, credentials, or database contents, and
+never executes anything — static inspection only, and every result is
+offered as something to confirm, never asserted as fact. Falls back to
+fully conversational discovery automatically if no project is present.
+
 ### Phase 2 — Architecture Delta Report
 
 A structured, scannable table mapping your current stack to its Solana target — what moves on-chain, what stays off-chain, what gets removed, what's new, and what the real risks are. Built to hand to an engineering team.
@@ -117,6 +138,7 @@ To enable: install Context7 and ensure `mcp__context7` is available in your Clau
 
 - **Only skill that recommends against Solana when appropriate** — builds trust, not hype
 - **Migration Readiness Score** — quantified, scannable, shareable signal
+- **Codebase-aware discovery** — confirms your stack instead of asking cold, when run inside an actual project
 - **Architecture Delta Report** — artifact a CTO can hand to their engineering team
 - **Decision cards with confidence levels** — teaches judgment, not just stack translation
 - **Dedicated Ethereum migration path** — addresses the largest pool of evaluating teams
@@ -132,16 +154,18 @@ sol-migration-skill/
 ├── CLAUDE.md                       ← Agent identity + routing
 ├── skill/
 │   ├── SKILL.md                    ← Entry point, module routing
-│   ├── 01-discovery.md             ← Structured intake (6 questions)
+│   ├── 01-discovery.md             ← Structured intake (6 questions, codebase-aware)
 │   ├── 02-suitability.md           ← Migration Readiness Score engine
 │   ├── 03-architecture-delta.md    ← Delta report generator
 │   ├── 04-decision-cards.md        ← 10 pre-built cards + generation logic
 │   └── 05-eth-to-sol.md            ← Ethereum → Solana dedicated path
 ├── agents/
 │   └── migration-advisor.md        ← Full assessment agent (Opus)
-└── commands/
-    ├── assess-migration.md         ← /assess-migration
-    └── generate-blueprint.md       ← /generate-blueprint
+├── commands/
+│   ├── assess-migration.md         ← /assess-migration
+│   └── generate-blueprint.md       ← /generate-blueprint
+└── rules/                          ← Reserved for future path-scoped rules.
+                                       Currently unused.
 ```
 
 ---

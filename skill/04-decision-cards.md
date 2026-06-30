@@ -104,9 +104,9 @@ Generate additional cards from the architecture delta for decisions not covered 
 
 **Why rejected:** Original SPL Token is simpler but has no extension surface. If you need any programmable behavior on transfers, you would build a custom program to wrap it — defeating the purpose. Use SPL Token only for simple, non-programmable fungible tokens (e.g., governance tokens with no transfer logic).
 
-**Confidence:** High
+**Confidence:** Medium by default — upgrades to High once Context7 confirms the current extension list is stable for your use case.
 
-**Context7:** `spl/token-2022` — fetch to confirm current extension list and any deprecated extensions.
+**Context7:** `spl/token-2022` — fetch to confirm current extension list and any deprecated extensions. The extension surface is actively growing; do not assign High confidence without this check or an explicit Q2 2026 pin.
 
 ---
 
@@ -221,11 +221,11 @@ Generate additional cards from the architecture delta for decisions not covered 
 
 **Alternative:** Use a single keypair for treasury authority; manage all roles on-chain.
 
-**Why rejected:** Single keypair treasury is an operational security risk — key compromise = full fund loss with no recourse. Multisig (Squads is the current production standard) requires M-of-N signers for treasury operations. Application roles on-chain add cost and query complexity for zero trust benefit.
+**Why rejected:** Single keypair treasury is an operational security risk — key compromise = full fund loss with no recourse. Multisig (Squads is the current production standard) requires M-of-N signers for treasury operations. Application roles on-chain add cost and query complexity for zero trust benefit. If implementing, verify the current Squads SDK version separately — this card's N/A reflects that the *decision* (multisig over single key) is stable, not that implementation details never change.
 
 **Confidence:** Very High
 
-**Context7:** N/A (Squads multisig pattern is stable; verify Squads SDK version if implementing)
+**Context7:** N/A (the multisig-over-single-key decision itself does not change; verify Squads SDK version at implementation time, not at decision time)
 
 ---
 

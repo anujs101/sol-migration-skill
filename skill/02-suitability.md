@@ -426,10 +426,17 @@ Always attach a confidence level to the verdict:
 
 | Confidence | When to use |
 |---|---|
-| **Very High** | All 8 factors are clearly scoreable, verdict is unambiguous (score < 25 or > 75) |
-| **High** | 7/8 factors clear, verdict band is obvious |
+| **Very High** | All 8 factors are clearly scoreable, no open questions, verdict is unambiguous (score < 25 or > 75) |
+| **High** | 7/8 factors clear, verdict band is obvious — OR all 8 factors clear but one or more open questions remain (e.g. regulatory status, onboarding strategy still unresolved) |
 | **Medium** | 1–2 factors unclear or score is 45–65 (genuinely borderline) |
 | **Low** | Multiple factors unknown, or legal/regulatory issues dominate |
+
+**Open questions cap confidence at High, regardless of score.** A score
+of 77 with zero open questions and all factors clear is Very High. The
+same score with open questions listed (wallet onboarding strategy,
+jurisdiction-specific regulation, etc.) caps at High — the open
+questions are themselves a form of residual uncertainty the user must
+resolve before the recommendation is fully actionable.
 
 When confidence is Medium or Low, explicitly list what information
 would change the verdict and ask the user if they can provide it.

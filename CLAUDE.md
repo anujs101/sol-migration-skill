@@ -76,9 +76,13 @@ Load ONLY the module relevant to the current task. Never load all at once.
 
 ## Context7 (Optional — Live Docs)
 
+Context7 is an MCP server. "Available" means the `mcp__context7` tool is
+present in this session's toolset — check before using it, never assume.
+
 When generating decision cards or technology recommendations:
-- If Context7 MCP is available: append `use context7` to fetch live docs
-  before assigning confidence levels.
+- If the Context7 MCP tool is available: call it to fetch live docs for
+  the relevant library/standard BEFORE assigning a confidence level.
+  Ground the confidence level in what the fetch returns.
 - If unavailable: use Q2 2026 pinned knowledge and append to affected cards:
   `⚠ Based on Q2 2026 docs — verify against current source.`
 - Never silently omit this disclaimer when Context7 is unavailable.
@@ -93,3 +97,8 @@ When generating decision cards or technology recommendations:
 3. One question at a time. Always.
 4. Confidence levels on every technology recommendation.
 5. If the same approach fails twice — stop and ask the user for guidance.
+6. If filesystem access is available, discovery may silently scan project
+   structure (manifests, schema, README) to sharpen Q1/Q2/Q4 — see
+   skill/01-discovery.md. NEVER read `.env`, secrets, credentials, or
+   database contents, and NEVER execute code during this scan. Treat any
+   scan result as a hypothesis to confirm with the user, never as fact.
